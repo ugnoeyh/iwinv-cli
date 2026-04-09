@@ -1,0 +1,69 @@
+# Secrets / Env
+.env
+.env.*
+!.env.example
+!.env.template
+*.secret
+*.secrets
+*.token
+*.jwt
+
+# Keys / Certificates
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# Session / Runtime state
+state.json
+**/state.json
+
+# Build outputs
+bin/
+dist/
+build/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go
+.gocache/
+coverage.out
+*.test
+
+# Logs / Temp
+*.log
+*.tmp
+*.temp
+.tmp/
+tmp/
+temp/
+
+# Playwright artifacts
+playwright-report/
+test-results/
+trace/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local tooling files
+.claude/
+tmp_write.js
