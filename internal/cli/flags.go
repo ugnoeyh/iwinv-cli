@@ -15,6 +15,7 @@ type Flags struct {
 	QueryOS                     bool
 	SearchSpec                  string
 	FirewallList                bool
+	FirewallCreate              bool
 	FirewallTab                 string
 	FirewallRef                 string
 	FirewallAdd                 bool
@@ -30,6 +31,7 @@ type Flags struct {
 	FirewallChoiceServer        string
 	FirewallChoicePolicy        string
 	FirewallDebug               bool
+	SupportWrite                bool
 	RuleIP                      string
 	RulePort                    string
 	RuleProtocol                string
@@ -66,6 +68,7 @@ func parseFlags() Flags {
 	flag.BoolVar(&cfg.QueryOS, "create-os", false, "선택 가능한 운영체제(OS) 목록 조회")
 	flag.StringVar(&cfg.SearchSpec, "search-spec", "", "특정 스펙을 제공하는 리전을 초고속 역추적 검색")
 	flag.BoolVar(&cfg.FirewallList, "firewall-list", false, "ELCAP 방화벽 정책 목록 조회")
+	flag.BoolVar(&cfg.FirewallCreate, "firewall-create", false, "ELCAP 방화벽 정책 생성")
 	flag.StringVar(&cfg.FirewallTab, "firewall-tab", "", "ELCAP 정책 탭 조회 (inbound|outbound|international|bot)")
 	flag.StringVar(&cfg.FirewallRef, "firewall-ref", "", "ELCAP 정책 IDX 또는 이름")
 	flag.BoolVar(&cfg.FirewallAdd, "firewall-add", false, "ELCAP 방화벽 룰 추가")
@@ -81,6 +84,7 @@ func parseFlags() Flags {
 	flag.StringVar(&cfg.FirewallChoiceServer, "firewall-choice-server", "", "대상 서버 IDX 또는 이름")
 	flag.StringVar(&cfg.FirewallChoicePolicy, "firewall-choice-policy", "", "적용할 방화벽 정책 IDX 또는 이름")
 	flag.BoolVar(&cfg.FirewallDebug, "firewall-debug", false, "ELCAP 방화벽 룰 추가 디버그 로그 출력")
+	flag.BoolVar(&cfg.SupportWrite, "support-write", false, "기술지원 작성 페이지로 이동 (동의 자동 처리, 백그라운드)")
 	flag.StringVar(&cfg.RuleIP, "rule-ip", "", "추가할 룰 대상 IP/CIDR (예: 115.68.248.221 또는 115.68.0.0/16)")
 	flag.StringVar(&cfg.RulePort, "rule-port", "", "추가할 룰 포트 (예: 9998)")
 	flag.StringVar(&cfg.RuleProtocol, "rule-protocol", "TCP", "추가할 룰 프로토콜 (TCP|UDP)")
@@ -119,41 +123,21 @@ func (cfg *Flags) ApplyEnvDefaults() {
 }
 
 func (cfg Flags) HasAction() bool {
-	return cfg.QueryRegion1 ||
-		cfg.QueryRegion2 != "" ||
-		cfg.QuerySpec ||
-		cfg.QueryOS ||
-		cfg.SearchSpec != "" ||
-		cfg.FirewallList ||
-		cfg.FirewallTab != "" ||
-		cfg.FirewallAdd ||
-		cfg.FirewallRemove ||
-		cfg.FirewallInternational != "" ||
-		cfg.FirewallInternationalRemove != "" ||
-		cfg.FirewallInternationalClear ||
-		cfg.FirewallBot != "" ||
-		cfg.FirewallBotRemove != "" ||
-		cfg.FirewallBotClear ||
-		cfg.FirewallChoiceUse != "" ||
-		cfg.Create ||
-		cfg.List ||
-		cfg.Power != "" ||
-		cfg.IP != "" ||
-		cfg.Login ||
-		cfg.Delete
+	return cfg.Login || cfg.hasNonLoginAction()
 }
 
 func (cfg Flags) IsLoginOnly() bool {
-	return cfg.Login && !cfg.hasActionExceptLogin()
+	return cfg.Login && !cfg.hasNonLoginAction()
 }
 
-func (cfg Flags) hasActionExceptLogin() bool {
+func (cfg Flags) hasNonLoginAction() bool {
 	return cfg.QueryRegion1 ||
 		cfg.QueryRegion2 != "" ||
 		cfg.QuerySpec ||
 		cfg.QueryOS ||
 		cfg.SearchSpec != "" ||
 		cfg.FirewallList ||
+		cfg.FirewallCreate ||
 		cfg.FirewallTab != "" ||
 		cfg.FirewallAdd ||
 		cfg.FirewallRemove ||
@@ -164,11 +148,27 @@ func (cfg Flags) hasActionExceptLogin() bool {
 		cfg.FirewallBotRemove != "" ||
 		cfg.FirewallBotClear ||
 		cfg.FirewallChoiceUse != "" ||
+		cfg.SupportWrite ||
 		cfg.Create ||
 		cfg.List ||
 		cfg.Power != "" ||
 		cfg.IP != "" ||
 		cfg.Delete
+}
+
+func (cfg Flags) hasFirewallAction() bool {
+	return cfg.FirewallList ||
+		cfg.FirewallCreate ||
+		cfg.FirewallTab != "" ||
+		cfg.FirewallAdd ||
+		cfg.FirewallRemove ||
+		cfg.FirewallInternational != "" ||
+		cfg.FirewallInternationalRemove != "" ||
+		cfg.FirewallInternationalClear ||
+		cfg.FirewallBot != "" ||
+		cfg.FirewallBotRemove != "" ||
+		cfg.FirewallBotClear ||
+		cfg.FirewallChoiceUse != ""
 }
 
 func printUsage() {

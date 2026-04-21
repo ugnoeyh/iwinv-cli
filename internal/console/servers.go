@@ -1,6 +1,7 @@
 package console
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -34,9 +35,16 @@ func RunListServers(page playwright.Page) error {
 }
 
 func RunServerAction(page playwright.Page, actionType, state, target string) error {
-	selected, err := lookupServer(page, target)
+	selected, err := LookupServer(page, target)
 	if err != nil {
 		return err
+	}
+	return RunServerActionFor(page, selected, actionType, state)
+}
+
+func RunServerActionFor(page playwright.Page, selected *domain.ServerInfo, actionType, state string) error {
+	if selected == nil {
+		return fmt.Errorf("대상 서버 정보가 비어 있습니다")
 	}
 
 	stateLower := strings.ToLower(state)
@@ -165,6 +173,40 @@ func RunDeleteServer(page playwright.Page, target string, pw string) error {
 		return fmt.Errorf("❌ 서버 삭제 실패 (상태 코드: %v, 응답: %v)", resMap["status"], resMap["body"])
 	}
 
+	bodyText := strings.TrimSpace(toString(resMap["body"]))
+	if bodyText != "" {
+		var obj map[string]interface{}
+		if err := json.Unmarshal([]byte(bodyText), &obj); err == nil {
+			if resultObj, ok := obj["result"].(map[string]interface{}); ok {
+				code := toInt(resultObj["code"])
+				message := strings.TrimSpace(toString(resultObj["message"]))
+				if code != 0 {
+					if message == "" {
+						message = "알 수 없는 오류"
+					}
+					return fmt.Errorf("❌ 서버 삭제 실패 (code=%d, message=%s)", code, message)
+				}
+			} else {
+				code := toInt(obj["code"])
+				if code != 0 && obj["code"] != nil {
+					message := strings.TrimSpace(toString(obj["message"]))
+					if message == "" {
+						message = "알 수 없는 오류"
+					}
+					return fmt.Errorf("❌ 서버 삭제 실패 (code=%d, message=%s)", code, message)
+				}
+			}
+		} else {
+			lower := strings.ToLower(bodyText)
+			if strings.Contains(lower, "오류") ||
+				strings.Contains(lower, "실패") ||
+				strings.Contains(lower, "비밀번호") ||
+				strings.Contains(lower, "password") {
+				return fmt.Errorf("❌ 서버 삭제 실패 응답: %s", previewText(bodyText, 300))
+			}
+		}
+	}
+
 	fmt.Printf("✅ [%s] 서버가 정상적으로 삭제되었습니다! (Goodbye~ 👋)\n", selected.Name)
 	return nil
 }
@@ -226,7 +268,10 @@ func lookupServer(page playwright.Page, target string) (*domain.ServerInfo, erro
 		return nil, err
 	}
 
-	selected := findServer(servers, target)
+	selected, err := findServer(servers, target)
+	if err != nil {
+		return nil, err
+	}
 	if selected == nil {
 		return nil, fmt.Errorf("일치하는 서버('%s')를 찾을 수 없습니다", target)
 	}
@@ -234,11 +279,49 @@ func lookupServer(page playwright.Page, target string) (*domain.ServerInfo, erro
 	return selected, nil
 }
 
-func findServer(servers []domain.ServerInfo, target string) *domain.ServerInfo {
+func LookupServer(page playwright.Page, target string) (*domain.ServerInfo, error) {
+	return lookupServer(page, target)
+}
+
+func findServer(servers []domain.ServerInfo, target string) (*domain.ServerInfo, error) {
+	target = strings.TrimSpace(target)
+	targetLower := strings.ToLower(target)
+
 	for i := range servers {
-		if strings.Contains(servers[i].Name, target) || servers[i].Idx == target {
-			return &servers[i]
+		if servers[i].Idx == target {
+			return &servers[i], nil
 		}
 	}
-	return nil
+
+	var exactNameMatches []*domain.ServerInfo
+	var matches []*domain.ServerInfo
+	for i := range servers {
+		nameLower := strings.ToLower(strings.TrimSpace(servers[i].Name))
+		if nameLower == targetLower {
+			exactNameMatches = append(exactNameMatches, &servers[i])
+			continue
+		}
+		if strings.Contains(nameLower, targetLower) {
+			matches = append(matches, &servers[i])
+		}
+	}
+
+	if len(exactNameMatches) == 1 {
+		return exactNameMatches[0], nil
+	}
+	if len(exactNameMatches) > 1 {
+		matches = exactNameMatches
+	}
+
+	if len(matches) == 0 {
+		return nil, nil
+	}
+	if len(matches) > 1 {
+		names := make([]string, 0, len(matches))
+		for _, m := range matches {
+			names = append(names, fmt.Sprintf("%s(IDX:%s)", m.Name, m.Idx))
+		}
+		return nil, fmt.Errorf("'%s'에 매칭되는 서버가 여러 개입니다: %s\n정확한 서버 IDX 또는 이름을 지정하세요", target, strings.Join(names, " | "))
+	}
+	return matches[0], nil
 }

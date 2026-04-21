@@ -63,6 +63,16 @@ IWINV_PW=your-password
 ./iwinvctl --firewall-list
 ```
 
+### ELCAP 방화벽 정책 생성
+```cmd
+./iwinvctl --firewall-create --firewall "정책명"
+```
+
+### 기술지원 작성 페이지 바로 열기 (동의 자동 처리)
+```cmd
+./iwinvctl --support-write
+```
+
 ### ELCAP 정책 탭 조회
 ```cmd
 ./iwinvctl --firewall-tab inbound --firewall-ref "[firewall-idx]"
@@ -199,6 +209,8 @@ IWINV_PW=your-password
 ```cmd
 ./iwinvctl --delete --target my-server
 ```
+./iwinvctl --firewall-ref "8761" --firewall-bot-clear
+./iwinvctl --firewall-tab bot --firewall-ref "8761"
 
 또는
 
@@ -250,6 +262,7 @@ IWINV_PW=your-password
 - `--create-spec`
 - `--create-os`
 - `--firewall-list`
+- `--firewall-create --firewall "<policy-name>"`
 - `--firewall-tab "inbound|outbound|international|bot" --firewall-ref "<idx-or-name>"`
 - `--firewall-add --firewall-ref "<idx-or-name>" --firewall-dir "inbound|outbound|both" --rule-ip "<ip/cidr>" --rule-port "<port>"`
 - `--firewall-remove --firewall-ref "<idx-or-name>" --firewall-dir "inbound|outbound|both" --rule-ip "<ip/cidr>" --rule-port "<port>"`
@@ -261,6 +274,7 @@ IWINV_PW=your-password
 - `--firewall-bot-clear --firewall-ref "<idx-or-name>"`
 - `--firewall-choice-server "<server-idx-or-name>" --firewall-choice-policy "<firewall-idx-or-name>" --firewall-choice-use "Y|N|on|off"`
 - `--firewall-debug`
+- `--support-write`
 - `--search-spec "<spec>"`
 
 ### 서버 관리

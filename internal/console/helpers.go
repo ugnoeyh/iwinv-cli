@@ -84,6 +84,8 @@ func toInt(v interface{}) int {
 
 func toString(v interface{}) string {
 	switch val := v.(type) {
+	case nil:
+		return ""
 	case string:
 		return val
 	case []byte:

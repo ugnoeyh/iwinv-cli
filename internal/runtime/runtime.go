@@ -23,14 +23,14 @@ type Runtime struct {
 	ctx     playwright.BrowserContext
 }
 
-func New(resetLogin bool) (*Runtime, error) {
+func New(resetLogin bool, headed bool) (*Runtime, error) {
 	pw, err := startPlaywright()
 	if err != nil {
 		return nil, err
 	}
 
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(true),
+		Headless: playwright.Bool(!headed),
 	})
 	if err != nil {
 		_ = pw.Stop()
@@ -196,6 +196,25 @@ func isSessionValid(ctx playwright.BrowserContext) (bool, error) {
 
 func waitForLoginCompletion(page playwright.Page, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
+
+	// 성공 케이스는 콘솔 도메인으로 바로 리다이렉트되는 경우가 많아 URL 대기를 먼저 시도한다.
+	fastWait := 4 * time.Second
+	if remaining := time.Until(deadline); remaining < fastWait {
+		fastWait = remaining
+	}
+	if fastWait > 0 {
+		_ = page.WaitForURL("**://console.iwinv.kr/**", playwright.PageWaitForURLOptions{
+			Timeout: playwright.Float(float64(fastWait / time.Millisecond)),
+		})
+		onLogin, err := isLoginPage(page)
+		if err != nil {
+			return fmt.Errorf("로그인 결과 확인 실패: %w", err)
+		}
+		if !onLogin {
+			return nil
+		}
+	}
+
 	for {
 		onLogin, err := isLoginPage(page)
 		if err != nil {
@@ -209,7 +228,7 @@ func waitForLoginCompletion(page playwright.Page, timeout time.Duration) error {
 			return fmt.Errorf("로그인 실패: 세션이 생성되지 않았습니다. ID/PW를 확인하거나 --login으로 다시 시도하세요")
 		}
 
-		page.WaitForTimeout(200)
+		page.WaitForTimeout(700)
 	}
 }
 

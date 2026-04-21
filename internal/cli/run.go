@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"iwinv-cli/internal/console"
@@ -15,6 +16,10 @@ import (
 )
 
 func Execute() error {
+	if err := checkDeprecatedFlags(os.Args[1:]); err != nil {
+		return err
+	}
+
 	cfg := parseFlags()
 	cfg.ApplyEnvDefaults()
 
@@ -23,7 +28,8 @@ func Execute() error {
 		return nil
 	}
 
-	appRuntime, err := runtime.New(cfg.Login)
+	headed := false
+	appRuntime, err := runtime.New(cfg.Login, headed)
 	if err != nil {
 		return err
 	}
@@ -51,7 +57,7 @@ func Execute() error {
 }
 
 func runRequestedActions(page playwright.Page, cfg Flags) error {
-	if cfg.FirewallDebug && (cfg.FirewallList || cfg.FirewallTab != "" || cfg.FirewallAdd || cfg.FirewallRemove || cfg.FirewallInternational != "" || cfg.FirewallInternationalRemove != "" || cfg.FirewallInternationalClear || cfg.FirewallBot != "" || cfg.FirewallBotRemove != "" || cfg.FirewallBotClear || cfg.FirewallChoiceUse != "") {
+	if cfg.FirewallDebug && cfg.hasFirewallAction() {
 		printFirewallDebugBinaryFingerprint()
 	}
 
@@ -82,6 +88,12 @@ func runRequestedActions(page playwright.Page, cfg Flags) error {
 		}
 	}
 
+	if cfg.SupportWrite {
+		if err := console.RunOpenSupportRequestWrite(page); err != nil {
+			return err
+		}
+	}
+
 	if cfg.List {
 		if err := console.RunListServers(page); err != nil {
 			return err
@@ -92,14 +104,18 @@ func runRequestedActions(page playwright.Page, cfg Flags) error {
 		if err := requireTarget(cfg.Target, "제어"); err != nil {
 			return err
 		}
+		selected, err := console.LookupServer(page, cfg.Target)
+		if err != nil {
+			return err
+		}
 
 		if cfg.Power != "" {
-			if err := console.RunServerAction(page, "power", cfg.Power, cfg.Target); err != nil {
+			if err := console.RunServerActionFor(page, selected, "power", cfg.Power); err != nil {
 				return err
 			}
 		}
 		if cfg.IP != "" {
-			if err := console.RunServerAction(page, "ip", cfg.IP, cfg.Target); err != nil {
+			if err := console.RunServerActionFor(page, selected, "ip", cfg.IP); err != nil {
 				return err
 			}
 		}
@@ -135,6 +151,15 @@ func runRequestedActions(page playwright.Page, cfg Flags) error {
 
 	if cfg.FirewallList {
 		if err := console.RunListFirewallPolicies(page); err != nil {
+			return err
+		}
+	}
+
+	if cfg.FirewallCreate {
+		if cfg.Firewall == "" {
+			return fmt.Errorf("❌ 방화벽 정책 생성 시 --firewall(정책 이름)이 필요합니다")
+		}
+		if err := console.RunCreateFirewallPolicy(page, cfg.Firewall, cfg.FirewallDebug); err != nil {
 			return err
 		}
 	}
@@ -337,6 +362,15 @@ func printFirewallDebugBinaryFingerprint() {
 func requireTarget(target, action string) error {
 	if target == "" {
 		return fmt.Errorf("❌ %s할 대상이 없습니다. --target 옵션을 지정하세요", action)
+	}
+	return nil
+}
+
+func checkDeprecatedFlags(args []string) error {
+	for _, arg := range args {
+		if arg == "--support-request-write" || strings.HasPrefix(arg, "--support-request-write=") {
+			return fmt.Errorf("❌ --support-request-write 옵션은 제거되었습니다. --support-write 를 사용하세요")
+		}
 	}
 	return nil
 }

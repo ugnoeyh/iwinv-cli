@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"iwinv-cli/internal/domain"
@@ -9,19 +10,23 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
-func printOptions(page playwright.Page, xpath, mode string) {
-	list := parseOptions(page, xpath, mode)
+func printOptions(page playwright.Page, xpath, mode string) error {
+	list, err := parseOptions(page, xpath, mode)
+	if err != nil {
+		return err
+	}
 	if len(list) == 0 {
 		fmt.Println("  ❌ 조회 가능한 항목이 없습니다.")
-		return
+		return nil
 	}
 
 	for _, item := range list {
 		fmt.Printf("  - %s\n", item.Text)
 	}
+	return nil
 }
 
-func parseOptions(page playwright.Page, xpath, mode string) []domain.OptionItem {
+func parseOptions(page playwright.Page, xpath, mode string) ([]domain.OptionItem, error) {
 	raw, err := page.Evaluate(`([xpath, mode]) => {
 		let res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
 		let cont = res.singleNodeValue;
@@ -55,13 +60,19 @@ func parseOptions(page playwright.Page, xpath, mode string) []domain.OptionItem 
 		return { items: items };
 	}`, []interface{}{xpath, mode})
 	if err != nil {
-		fmt.Printf("⚠️ 옵션 조회 스크립트 실행 오류: %v\n", err)
-		return nil
+		return nil, fmt.Errorf("옵션 조회 스크립트 실행 오류: %w", err)
 	}
 
 	resMap, ok := raw.(map[string]interface{})
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("옵션 조회 응답 형식을 해석할 수 없습니다")
+	}
+
+	if errRaw, ok := resMap["error"]; ok && errRaw != nil {
+		if errText := strings.TrimSpace(toString(errRaw)); errText != "" && errText != "<nil>" {
+			fmt.Fprintf(os.Stderr, "⚠️ 옵션 컨테이너 조회 실패(mode=%s, xpath=%s): %s\n", mode, xpath, errText)
+			return nil, fmt.Errorf("❌ 옵션 컨테이너를 찾지 못했습니다")
+		}
 	}
 
 	var list []domain.OptionItem
@@ -80,7 +91,7 @@ func parseOptions(page playwright.Page, xpath, mode string) []domain.OptionItem 
 		}
 	}
 
-	return list
+	return list, nil
 }
 
 func clickOptionByText(page playwright.Page, xpath, targetText string, isTable bool) error {

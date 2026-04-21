@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/playwright-community/playwright-go"
 )
@@ -162,7 +163,9 @@ func RunCLIQuery(page playwright.Page, qR1 bool, qR2 string, qSpec bool, qOS boo
 
 	if qR1 {
 		fmt.Println("\n🔎 [리전 1차 목록]")
-		printOptions(page, region1XPath, "region")
+		if err := printOptions(page, region1XPath, "region"); err != nil {
+			return err
+		}
 	}
 
 	if qR2 != "" {
@@ -170,8 +173,12 @@ func RunCLIQuery(page playwright.Page, qR1 bool, qR2 string, qSpec bool, qOS boo
 		if err := clickOptionByText(page, region1XPath, qR2, false); err != nil {
 			return fmt.Errorf("리전 1차 '%s'를 찾지 못했습니다", qR2)
 		}
-		page.WaitForTimeout(1500)
-		printOptions(page, region2XPath, "region")
+		if err := waitForSelectableOptions(page, "리전 2차", region2XPath, false, 7*time.Second); err != nil {
+			return err
+		}
+		if err := printOptions(page, region2XPath, "region"); err != nil {
+			return err
+		}
 	}
 
 	if !qSpec && !qOS {
@@ -182,19 +189,25 @@ func RunCLIQuery(page playwright.Page, qR1 bool, qR2 string, qSpec bool, qOS boo
 		if err := clickOptionByText(page, region1XPath, targetReg1, false); err != nil {
 			return fmt.Errorf("리전 1차 '%s'를 찾지 못했습니다", targetReg1)
 		}
-		page.WaitForTimeout(1500)
+		if err := waitForSelectableOptions(page, "리전 2차", region2XPath, false, 7*time.Second); err != nil {
+			return err
+		}
 	}
 
 	if targetReg2 != "" {
 		if err := clickOptionByText(page, region2XPath, targetReg2, false); err != nil {
 			return fmt.Errorf("리전 2차 '%s'를 찾지 못했습니다", targetReg2)
 		}
-		page.WaitForTimeout(2000)
+		if err := waitForSelectableOptions(page, "서버 스펙", specXPath, true, 7*time.Second); err != nil {
+			return err
+		}
 	}
 
 	if qSpec {
 		fmt.Println("\n🔎 [서버 스펙 목록]")
-		printOptions(page, specXPath, "spec")
+		if err := printOptions(page, specXPath, "spec"); err != nil {
+			return err
+		}
 	}
 
 	if !qOS {
@@ -205,16 +218,22 @@ func RunCLIQuery(page playwright.Page, qR1 bool, qR2 string, qSpec bool, qOS boo
 		if err := clickOptionByText(page, specXPath, targetSpec, true); err != nil {
 			return fmt.Errorf("스펙 '%s'를 찾지 못했습니다", targetSpec)
 		}
-		page.WaitForTimeout(1500)
+		if err := waitForSelectableOptions(page, "운영체제", osTableXPath, true, 7*time.Second); err != nil {
+			return err
+		}
 	}
 
 	osTab := page.Locator("xpath=" + resolveOSTabXPath(osType))
 	if count, _ := osTab.Count(); count > 0 {
 		_ = osTab.Click()
 	}
-	page.WaitForTimeout(1000)
+	if err := waitForXPathVisible(page, "운영체제 표", osTableXPath, 5*time.Second); err != nil {
+		return err
+	}
 
 	fmt.Printf("\n🔎 ['%s' 탭 운영체제(OS) 목록]\n", osType)
-	printOptions(page, osTableXPath, "os")
+	if err := printOptions(page, osTableXPath, "os"); err != nil {
+		return err
+	}
 	return nil
 }

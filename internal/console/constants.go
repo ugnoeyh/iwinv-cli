@@ -1,15 +1,16 @@
 package console
 
 const (
-	instanceURL         = "https://console.iwinv.kr/instance"
-	createServiceURL    = "https://console.iwinv.kr/instance/request/service"
-	firewallURL         = "https://console.iwinv.kr/firewall"
-	firewallTabPageURL  = "https://console.iwinv.kr/firewall/tab"
-	firewallTabAPIBase  = "https://console.iwinv.kr/firewall/tab"
-	optionURLPattern    = "**/instance/request/option"
-	confirmURLPattern   = "**/instance/request/confirm"
-	successURLPattern   = "**/instance/request/success"
-	firewallTable2XPath = `/html/body/div[2]/div[2]/div/main/section/div/div[2]/div/table[2]`
+	instanceURL             = "https://console.iwinv.kr/instance"
+	createServiceURL        = "https://console.iwinv.kr/instance/request/service"
+	firewallURL             = "https://console.iwinv.kr/firewall"
+	firewallTabURL          = "https://console.iwinv.kr/firewall/tab"
+	supportRequestAgreeJSON = "https://console.iwinv.kr/js/console/support/request/agree.json"
+	supportRequestWrite     = "https://console.iwinv.kr/support/request/write"
+	optionURLPattern        = "**/instance/request/option"
+	confirmURLPattern       = "**/instance/request/confirm"
+	successURLPattern       = "**/instance/request/success"
+	firewallTable2XPath     = `/html/body/div[2]/div[2]/div/main/section/div/div[2]/div/table[2]`
 
 	popupCloseXPath    = `/html/body/div[2]/div[2]/div/main/div[2]/div/div[1]/button[1]`
 	region1XPath       = `/html/body/div[2]/div[2]/div/main/form/div[2]/div/section[1]/div/div[2]/div[1]`
