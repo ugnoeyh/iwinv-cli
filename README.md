@@ -5,6 +5,7 @@ iwinv 콘솔을 Playwright로 자동화하는 Go CLI 프로젝트입니다.
 
 ## 주요 기능
 - 내 서버 목록 조회
+- 서버 트래픽 일일 사용량 조회
 - 서버 전원 `on/off`
 - 서버 공인 IP `on/off`
 - 서버 영구 삭제
@@ -33,7 +34,18 @@ cd iwinv-cli
 go mod tidy
 ```
 
-처음 실행 시 Playwright와 브라우저 리소스가 자동 설치될 수 있습니다.
+처음 실행 시 Playwright(Chromium) 런타임이 자동 설치됩니다.
+
+### 릴리즈 바이너리 원클릭 설치 (macOS/Linux)
+```sh
+curl -fsSL https://raw.githubusercontent.com/ugnoeyh/iwinv-cli/main/install.sh | sh
+```
+
+- 설치 위치 기본값: `/usr/local/bin/iwinvctl`
+- 릴리즈 자산명 규칙:
+- 현재 릴리즈 형식(권장): `iwinvctl-linux-amd64`, `iwinvctl-linux-arm64`, `iwinvctl-macos-universal2`
+- 압축 형식도 지원: `<asset>.tar.gz`
+- `.sha256` 파일이 있으면 검증하고, 없으면 경고 후 설치 진행
 
 ## 빠른 시작
 ### 1. 로그인 세션 생성
@@ -52,10 +64,45 @@ go mod tidy
 IWINV_PW=your-password
 ```
 
+로그인 자동입력을 쓰려면 아래 키를 추가하세요.
+
+```env
+IWINV_ID=your-id
+IWINV_PW=your-password
+```
+
+- `IWINV_ID`, `IWINV_PW`가 둘 다 있으면 `--login` 시 프롬프트 없이 사용합니다.
+- 둘 중 하나만 있으면 없는 값만 프롬프트로 물어봅니다.
+
 ## 사용 예시
 ### 서버 목록 조회
 ```cmd
 ./iwinvctl --list
+```
+
+### 서버 트래픽 일일 사용량 조회 (연/월 프롬프트)
+```cmd
+./iwinvctl --traffic --target "[server-idx]"
+```
+
+### 서버 트래픽 일일 사용량 조회 (연/월 직접 지정)
+```cmd
+./iwinvctl --traffic --target "[server-idx]" --traffic-year 2026 --traffic-month 3
+```
+
+- `--target`을 생략하면 서버 목록(`IP`, `IDX`)을 먼저 보여준 뒤 대상을 물어봅니다.
+
+### 요금 상세 조회 (서버/상품별 실시간)
+```cmd
+./iwinvctl --bill
+```
+
+```cmd
+./iwinvctl --bill --bill-year 2026 --bill-month 4
+```
+
+```cmd
+./iwinvctl --bill --target "115.68.249.73"
 ```
 
 ### ELCAP 방화벽 정책 목록 조회
@@ -276,9 +323,13 @@ IWINV_PW=your-password
 - `--firewall-debug`
 - `--support-write`
 - `--search-spec "<spec>"`
+- `--traffic --target "<name-or-idx>" [--traffic-year <yyyy>] [--traffic-month <1-12>]`
+- `--bill [--bill-year <yyyy>] [--bill-month <1-12>] [--target "<name-or-idx|ip>"]`
 
 ### 서버 관리
 - `--list`
+- `--traffic --target "<name-or-idx>"`
+- `--bill`
 - `--power on|off --target "<name-or-idx>"`
 - `--ip on|off --target "<name-or-idx>"`
 - `--delete --target "<name-or-idx>"`

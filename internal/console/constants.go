@@ -3,6 +3,7 @@ package console
 const (
 	instanceURL             = "https://console.iwinv.kr/instance"
 	createServiceURL        = "https://console.iwinv.kr/instance/request/service"
+	financeBillURL          = "https://console.iwinv.kr/finance/bill"
 	firewallURL             = "https://console.iwinv.kr/firewall"
 	firewallTabURL          = "https://console.iwinv.kr/firewall/tab"
 	supportRequestAgreeJSON = "https://console.iwinv.kr/js/console/support/request/agree.json"

@@ -87,6 +87,12 @@ func runRequestedActions(page playwright.Page, cfg Flags) error {
 			return fmt.Errorf("❌ 인스턴스 방화벽 사용 설정 시 --firewall-choice-policy(방화벽 IDX 또는 이름)가 필요합니다")
 		}
 	}
+	if !cfg.Traffic && (cfg.TrafficYear != 0 || cfg.TrafficMonth != 0) {
+		return fmt.Errorf("❌ --traffic-year, --traffic-month 는 --traffic 와 함께 사용하세요")
+	}
+	if !cfg.Bill && (cfg.BillYear != 0 || cfg.BillMonth != 0) {
+		return fmt.Errorf("❌ --bill-year, --bill-month 는 --bill 과 함께 사용하세요")
+	}
 
 	if cfg.SupportWrite {
 		if err := console.RunOpenSupportRequestWrite(page); err != nil {
@@ -96,6 +102,18 @@ func runRequestedActions(page playwright.Page, cfg Flags) error {
 
 	if cfg.List {
 		if err := console.RunListServers(page); err != nil {
+			return err
+		}
+	}
+
+	if cfg.Traffic {
+		if err := console.RunShowServerTraffic(page, cfg.Target, cfg.TrafficYear, cfg.TrafficMonth); err != nil {
+			return err
+		}
+	}
+
+	if cfg.Bill {
+		if err := console.RunShowBilling(page, cfg.Target, cfg.BillYear, cfg.BillMonth); err != nil {
 			return err
 		}
 	}

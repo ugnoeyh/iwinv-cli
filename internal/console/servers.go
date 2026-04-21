@@ -13,6 +13,8 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
+var ipv4LikeRegex = regexp.MustCompile(`^\d{1,3}(?:\.\d{1,3}){3}$`)
+
 func RunListServers(page playwright.Page) error {
 	fmt.Println("🚀 서버 목록을 갱신 중입니다...")
 
@@ -272,6 +274,15 @@ func lookupServer(page playwright.Page, target string) (*domain.ServerInfo, erro
 	if err != nil {
 		return nil, err
 	}
+	if selected == nil && isIPv4Like(target) {
+		fallback, fbErr := lookupServerByIPFromPage(page, strings.TrimSpace(target))
+		if fbErr != nil {
+			return nil, fbErr
+		}
+		if fallback != nil {
+			return fallback, nil
+		}
+	}
 	if selected == nil {
 		return nil, fmt.Errorf("일치하는 서버('%s')를 찾을 수 없습니다", target)
 	}
@@ -293,15 +304,35 @@ func findServer(servers []domain.ServerInfo, target string) (*domain.ServerInfo,
 		}
 	}
 
+	if isIPv4Like(target) {
+		var ipExactMatches []*domain.ServerInfo
+		for i := range servers {
+			if strings.TrimSpace(servers[i].IP) == target {
+				ipExactMatches = append(ipExactMatches, &servers[i])
+			}
+		}
+		if len(ipExactMatches) == 1 {
+			return ipExactMatches[0], nil
+		}
+		if len(ipExactMatches) > 1 {
+			names := make([]string, 0, len(ipExactMatches))
+			for _, m := range ipExactMatches {
+				names = append(names, fmt.Sprintf("%s(IP:%s, IDX:%s)", m.Name, m.IP, m.Idx))
+			}
+			return nil, fmt.Errorf("'%s' IP에 매칭되는 서버가 여러 개입니다: %s\n정확한 서버 IDX를 지정하세요", target, strings.Join(names, " | "))
+		}
+	}
+
 	var exactNameMatches []*domain.ServerInfo
 	var matches []*domain.ServerInfo
 	for i := range servers {
 		nameLower := strings.ToLower(strings.TrimSpace(servers[i].Name))
+		ipLower := strings.ToLower(strings.TrimSpace(servers[i].IP))
 		if nameLower == targetLower {
 			exactNameMatches = append(exactNameMatches, &servers[i])
 			continue
 		}
-		if strings.Contains(nameLower, targetLower) {
+		if strings.Contains(nameLower, targetLower) || strings.Contains(ipLower, targetLower) {
 			matches = append(matches, &servers[i])
 		}
 	}
@@ -324,4 +355,78 @@ func findServer(servers []domain.ServerInfo, target string) (*domain.ServerInfo,
 		return nil, fmt.Errorf("'%s'에 매칭되는 서버가 여러 개입니다: %s\n정확한 서버 IDX 또는 이름을 지정하세요", target, strings.Join(names, " | "))
 	}
 	return matches[0], nil
+}
+
+func lookupServerByIPFromPage(page playwright.Page, targetIP string) (*domain.ServerInfo, error) {
+	raw, err := page.Evaluate(`(targetIP) => {
+		function normalize(text) {
+			return (text || "").replace(/\s+/g, " ").trim();
+		}
+
+		const rows = Array.from(document.querySelectorAll("tr[data-idx]"));
+		const matches = [];
+
+		for (const row of rows) {
+			const text = normalize(row.innerText || row.textContent || "");
+			if (!text.includes(targetIP)) continue;
+
+			const idx = (row.getAttribute("data-idx") || "").trim();
+			if (!idx) continue;
+
+			let name = "";
+			const nameNode = row.querySelector(".inline-flex.items-center.justify-center.gap-3") || row.querySelector("td");
+			if (nameNode) {
+				name = normalize(nameNode.innerText || nameNode.textContent || "");
+				if (name.includes("\n")) {
+					name = normalize(name.split("\n")[0]);
+				}
+			}
+
+			matches.push({ idx, name });
+		}
+
+		return { matches };
+	}`, targetIP)
+	if err != nil {
+		return nil, fmt.Errorf("IP fallback 조회 스크립트 실행 오류: %w", err)
+	}
+
+	resMap, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("IP fallback 조회 결과를 해석할 수 없습니다")
+	}
+
+	items, ok := resMap["matches"].([]interface{})
+	if !ok || len(items) == 0 {
+		return nil, nil
+	}
+
+	if len(items) > 1 {
+		names := make([]string, 0, len(items))
+		for _, item := range items {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name := strings.TrimSpace(toString(m["name"]))
+			idx := strings.TrimSpace(toString(m["idx"]))
+			names = append(names, fmt.Sprintf("%s(IDX:%s)", name, idx))
+		}
+		return nil, fmt.Errorf("'%s' IP에 매칭되는 서버가 여러 개입니다: %s\n정확한 서버 IDX를 지정하세요", targetIP, strings.Join(names, " | "))
+	}
+
+	item, ok := items[0].(map[string]interface{})
+	if !ok {
+		return nil, nil
+	}
+
+	return &domain.ServerInfo{
+		IP:   targetIP,
+		Idx:  strings.TrimSpace(toString(item["idx"])),
+		Name: strings.TrimSpace(toString(item["name"])),
+	}, nil
+}
+
+func isIPv4Like(value string) bool {
+	return ipv4LikeRegex.MatchString(strings.TrimSpace(value))
 }

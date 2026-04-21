@@ -38,11 +38,17 @@ type Flags struct {
 	RuleTitle                   string
 	RuleMemo                    string
 
-	List   bool
-	Power  string
-	IP     string
-	Delete bool
-	Target string
+	List         bool
+	Traffic      bool
+	TrafficYear  int
+	TrafficMonth int
+	Bill         bool
+	BillYear     int
+	BillMonth    int
+	Power        string
+	IP           string
+	Delete       bool
+	Target       string
 
 	Create   bool
 	Region1  string
@@ -92,6 +98,12 @@ func parseFlags() Flags {
 	flag.StringVar(&cfg.RuleMemo, "rule-memo", "", "추가할 룰 메모")
 
 	flag.BoolVar(&cfg.List, "list", false, "내 서버 목록 조회")
+	flag.BoolVar(&cfg.Traffic, "traffic", false, "서버 트래픽 일일 사용량 조회")
+	flag.IntVar(&cfg.TrafficYear, "traffic-year", 0, "트래픽 조회 연도 (예: 2026, 미입력 시 프롬프트)")
+	flag.IntVar(&cfg.TrafficMonth, "traffic-month", 0, "트래픽 조회 월 (1~12, 미입력 시 프롬프트)")
+	flag.BoolVar(&cfg.Bill, "bill", false, "요금 상세(서버/상품별) 조회")
+	flag.IntVar(&cfg.BillYear, "bill-year", 0, "요금 조회 연도 (예: 2026, 미입력 시 현재 연도)")
+	flag.IntVar(&cfg.BillMonth, "bill-month", 0, "요금 조회 월 (1~12, 미입력 시 현재 월)")
 	flag.StringVar(&cfg.Power, "power", "", "서버 전원 제어 (on/off)")
 	flag.StringVar(&cfg.IP, "ip", "", "서버 공인 IP 제어 (on/off)")
 	flag.BoolVar(&cfg.Delete, "delete", false, "서버 영구 삭제 실행")
@@ -151,6 +163,8 @@ func (cfg Flags) hasNonLoginAction() bool {
 		cfg.SupportWrite ||
 		cfg.Create ||
 		cfg.List ||
+		cfg.Traffic ||
+		cfg.Bill ||
 		cfg.Power != "" ||
 		cfg.IP != "" ||
 		cfg.Delete
