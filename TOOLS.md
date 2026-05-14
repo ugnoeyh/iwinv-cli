@@ -8,7 +8,7 @@
 - 작업 디렉터리: `/usr/local/bin`
 - 실행 바이너리: `/usr/local/bin/iwinvctl`
 - 환경파일: `/usr/local/bin/.env`
-- 세션파일: `/usr/local/bin/state.json` (현재 작업 디렉터리 기준)
+- 세션파일: (현재 작업 디렉터리 기준)
 
 ## 2) 기본 실행 템플릿
 모든 명령은 아래 템플릿을 기준으로 실행합니다.
