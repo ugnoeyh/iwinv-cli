@@ -57,6 +57,7 @@ func RunFindSpecRegion(page playwright.Page, targetSpec string) error {
 		for (let i = 0; i < r1Cont.children.length; i++) {
 			let r1 = r1Cont.children[i];
 			if (!isVisible(r1)) continue;
+			if (r1.classList && (r1.classList.contains('non') || r1.classList.contains('!hidden'))) continue;
 
 			let r1Name = r1.innerText.trim().replace(/\s+/g, ' ');
 			safeClick(r1);
@@ -66,11 +67,13 @@ func RunFindSpecRegion(page playwright.Page, targetSpec string) error {
 				if (!cont) return false;
 				for (let child of cont.children) {
 					if (!isVisible(child)) continue;
+					if (child.classList && (child.classList.contains('non') || child.classList.contains('!hidden'))) continue;
 					let txt = child.innerText ? child.innerText.trim() : "";
 					if (txt && !txt.includes("선택해주세요")) return true;
 				}
 				return false;
 			}, 3000);
+			await delay(400);
 
 			let r2Cont = getNode(r2X);
 			if (!r2Cont) continue;
@@ -78,6 +81,7 @@ func RunFindSpecRegion(page playwright.Page, targetSpec string) error {
 			for (let j = 0; j < r2Cont.children.length; j++) {
 				let r2 = r2Cont.children[j];
 				if (!isVisible(r2)) continue;
+				if (r2.classList && (r2.classList.contains('non') || r2.classList.contains('!hidden'))) continue;
 
 				let r2Name = r2.innerText.trim().replace(/\s+/g, ' ');
 				safeClick(r2);
@@ -88,11 +92,13 @@ func RunFindSpecRegion(page playwright.Page, targetSpec string) error {
 					let rows = cont.querySelectorAll("tr");
 					for (let row of rows) {
 						if (!isVisible(row)) continue;
+						if (row.classList && (row.classList.contains('non') || row.classList.contains('!hidden'))) continue;
 						let rowText = row.innerText ? row.innerText.trim() : "";
 						if (rowText) return true;
 					}
 					return false;
 				}, 3500);
+				await delay(400);
 
 				let specCont = getNode(specX);
 				if (!specCont) continue;
@@ -101,6 +107,7 @@ func RunFindSpecRegion(page playwright.Page, targetSpec string) error {
 				for (let k = 0; k < specs.length; k++) {
 					let sp = specs[k];
 					if (!isVisible(sp)) continue;
+					if (sp.classList && (sp.classList.contains('non') || sp.classList.contains('!hidden'))) continue;
 
 					let txt = normalize(sp.innerText);
 					let rb = sp.querySelector('input[type="radio"]');

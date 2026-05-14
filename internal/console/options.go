@@ -44,6 +44,7 @@ func parseOptions(page playwright.Page, xpath, mode string) ([]domain.OptionItem
 		for (let i = 0; i < children.length; i++) {
 			let el = children[i];
 			if (isElementHidden(el)) continue;
+			if (el.classList && (el.classList.contains('non') || el.classList.contains('!hidden'))) continue;
 
 			let txt = el.innerText ? el.innerText.trim().replace(/\s+/g, ' ') : "";
 			if (mode === 'spec' || mode === 'os') {
@@ -141,6 +142,7 @@ func selectOption(page playwright.Page, xpath, target string, isTable, requireAv
 
 		for (let el of items) {
 			if (el.offsetWidth === 0 || el.offsetHeight === 0) continue;
+			if (el.classList && (el.classList.contains('non') || el.classList.contains('!hidden'))) continue;
 
 			let elText = el.innerText ? el.innerText.replace(/\s+/g, ' ').trim() : "";
 			if (elText) available.push(elText);

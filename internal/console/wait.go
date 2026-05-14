@@ -25,6 +25,8 @@ func waitForSelectableOptions(page playwright.Page, stepName, xpath string, isTa
 	}); err != nil {
 		return fmt.Errorf("[%s] 선택 항목 로딩 지연: %w", stepName, err)
 	}
+	// 항목이 감지된 뒤 페이지 JS가 non/!hidden 클래스 적용을 마칠 때까지 대기
+	page.WaitForTimeout(400)
 	return nil
 }
 
@@ -77,6 +79,7 @@ func hasSelectableOptions(page playwright.Page, xpath string, isTable bool) (boo
 		let items = isTable ? container.querySelectorAll('tr') : container.children;
 		for (let el of items) {
 			if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) continue;
+			if (el.classList && (el.classList.contains('non') || el.classList.contains('!hidden'))) continue;
 
 			let txt = el.innerText ? el.innerText.trim().replace(/\s+/g, ' ') : "";
 			if (!txt || txt.includes("선택해주세요")) continue;

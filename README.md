@@ -365,7 +365,7 @@ docs/
 - `state.json`은 로그인 세션 캐시 파일입니다.
 - `.env`와 `state.json`은 민감 정보가 될 수 있으므로 커밋하지 않는 편이 안전합니다.
 - iwinv 콘솔 DOM 구조가 바뀌면 `internal/console/constants.go`와 `internal/console/options.go`를 먼저 점검하세요.
-- 유지보수 기준은 [`CLAUDE.md`](./CLAUDE.md), 구조 설명은 [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)를 참고하세요.
+- 구조 설명은 [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)를 참고하세요.
 
 
 ## 주의사항

@@ -95,9 +95,8 @@ func runRequestedActions(page playwright.Page, cfg Flags) error {
 	}
 
 	if cfg.SupportWrite {
-		if err := console.RunOpenSupportRequestWrite(page); err != nil {
-			return err
-		}
+		fmt.Println("아직 구현안된 기능입니다")
+		return nil
 	}
 
 	if cfg.List {
